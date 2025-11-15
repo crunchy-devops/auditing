@@ -1,0 +1,28 @@
+---
+# tasks file for reportings
+
+- name: Install Python pip and dependencies
+  yum:
+    name:
+      - python-pip
+    state: present
+
+- name:  Install psutil library
+  pip:
+    name: psutil
+    
+- name: Copy metrics script to host
+  template:
+    src: system_metrics.py.j2
+    dest: /usr/local/bin/system_metrics.py
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Add cron job for metrics script
+  cron:
+    name: "Zabbix custom metrics"
+    minute: "*/15"
+    job: "/usr/local/bin/system_metrics.py"
+    user: root
+    state: present

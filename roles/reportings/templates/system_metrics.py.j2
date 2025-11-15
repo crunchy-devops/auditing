@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import psutil
+import subprocess
+import socket
+
+# --- Configuration ---
+# L'adresse IP ou le nom d'hote de votre serveur Zabbix.
+# Cette valeur est remplie par Ansible.
+ZABBIX_SERVER = " {{ zabbix_server_host }} "
+
+# Le nom d'hote du client tel que configure dans Zabbix.
+# Par defaut, le nom d'hote local.
+HOSTNAME = socket.gethostname()
+
+# --- Fonctions de collecte ---
+
+def get_cpu_usage():
+    """Retourne l'utilisation du CPU en pourcentage."""
+    return psutil.cpu_percent(interval=1)
+
+def get_memory_usage():
+    """Retourne l'utilisation de la memoire en pourcentage."""
+    return psutil.virtual_memory().percent
+
+def get_disk_usage():
+    """Retourne l'utilisation du disque pour la racine ('/') en pourcentage."""
+    return psutil.disk_usage('/').percent
+
+# --- Fonction d'envoi ---
+
+def send_to_zabbix(key, value):
+    """
+    Envoie une seule metrique au serveur Zabbix via zabbix-sender.
+    """
+    command = [
+        'zabbix_sender',
+        '-z', ZABBIX_SERVER,
+        '-s', HOSTNAME,
+        '-k', key,
+        '-o', str(value)
+    ]
+    try:
+        print("Envoi de la clef '{}' avec la valeur '{}'".format(key, value))
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError as e:
+        print("Erreur lors de l'envoi de la donnee pour la clef '{}': {}".format(key, e))
+    except OSError as e:
+        print("Erreur: La commande zabbix_sender est-elle installee et dans le PATH? {}".format(e))
+
+
+# --- Main ---
+
+if __name__ == "__main__":
+    # Assurez-vous que les clefs correspondent a celles configurees dans l'interface Zabbix
+    # pour l'hote.
+    # Exemple de clefs: system.cpu.usage, system.memory.usage, system.disk.usage
+    
+    cpu = get_cpu_usage()
+    send_to_zabbix('system.cpu.usage', cpu)
+
+    memory = get_memory_usage()
+    send_to_zabbix('system.memory.usage', memory)
+
+    disk = get_disk_usage()
+    send_to_zabbix('system.disk.usage', disk)
+
+    print("Metriques envoyees avec succes.")
