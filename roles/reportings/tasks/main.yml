@@ -4,7 +4,7 @@
 - name: Copy metrics script to host
   template:
     src: system_metrics.py.j2
-    dest: /usr/local/bin/system_metrics.py
+    dest: /usr/bin/system_metrics.py
     owner: root
     group: root
     mode: '0755'
@@ -13,6 +13,6 @@
   cron:
     name: "Zabbix custom metrics"
     minute: "*/15"
-    job: "/usr/local/bin/system_metrics.py"
+    job: "/usr/bin/system_metrics.py"
     user: root
     state: present
